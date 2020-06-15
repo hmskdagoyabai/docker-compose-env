@@ -1,0 +1,38 @@
+version: "3"  # composeファイルのバージョン
+services:       # コンテナを定義
+    yourkotaichi:
+        container_name: yourkotaichi  # コンテナの名称
+        build:
+            context: ../         # docker buildするときのパス、このファイルのあるところからの相対パス
+            dockerfile: dockerfiles/yourkotaichi/Dockerfile # contextのパスから指定
+        networks:                   # 属するネットワークの設定
+            my_host_network:        # 後述のmy_host_networkに属する
+                aliases:
+                    - yourkotaichi-server  # my_host_network上ではこのエイリアスでコンテナを指定可能
+        expose:
+            - 9877                  # このポートをLISTEN状態にする
+        restart: always             # サービス再起動ポリシー
+
+    web-server:
+        container_name: web-server
+        build:
+            context: ../
+            dockerfile: dockerfiles/nginx/Dockerfile
+        networks:
+            my_host_network:
+                aliases:
+                    - nginx-server
+        ports:
+            - 80:9123
+        depends_on:         # 依存関係を指定。web-serverの起動より前にapp-serverを起動するようになる
+            - yourkotaichi
+        restart: always
+
+# ネットワークの設定
+# ホストPC上での複数コンテナ起動のため、overlayではなくbridgeを使用
+networks:
+    my_host_network:
+        # name: my-nginx-network
+        driver: bridge
+        ipam:
+            driver: default
